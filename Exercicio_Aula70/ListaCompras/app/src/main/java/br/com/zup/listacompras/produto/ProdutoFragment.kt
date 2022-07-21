@@ -1,16 +1,16 @@
 package br.com.zup.listacompras.produto
 
 import android.os.Bundle
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
-import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.NavHostFragment
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import br.com.zup.listacompras.CHAVE_PRODUTO
+import br.com.zup.listacompras.MSG_ERROR_MISSING_DETAIL
+import br.com.zup.listacompras.MSG_ERROR_MISSING_NAME
 import br.com.zup.listacompras.R
 import br.com.zup.listacompras.adapter.ProdutoAdapter
 import br.com.zup.listacompras.databinding.FragmentProdutoBinding
@@ -19,13 +19,13 @@ import br.com.zup.listacompras.model.Produto
 class ProdutoFragment : Fragment() {
     private lateinit var binding: FragmentProdutoBinding
 
-    private val produtoAdapter: ProdutoAdapter by lazy {
-        ProdutoAdapter(arrayListOf())
+    private val adapter: ProdutoAdapter by lazy {
+        ProdutoAdapter(arrayListOf(), this::irParaDetalheProduto)
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         binding = FragmentProdutoBinding.inflate(inflater, container, false)
         return binding.root
@@ -42,20 +42,19 @@ class ProdutoFragment : Fragment() {
     }
 
     private fun exibirRecyclerView() {
-        binding.rvListaProduto.adapter = produtoAdapter
-        binding.rvListaProduto.layoutManager = StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL)
+        binding.rvListaProdutos.adapter = adapter
+        binding.rvListaProdutos.layoutManager = LinearLayoutManager(context)
     }
 
     private fun adicionarItemListaProduto() {
-        val listaNovaProduto = mutableListOf<Produto>()
+        val listaProduto = mutableListOf<Produto>()
+        val produtoRecebido = recuperarDadosCampoEdicao()
 
-        val produto = recuperarDadosCampoEdicao()
-
-        if (produto != null){
-            listaNovaProduto.add(produto)
-            produtoAdapter.atualizarListaProduto(listaNovaProduto)
+        if (produtoRecebido != null) {
+            listaProduto.add(produtoRecebido)
+            adapter.atualizarListaProduto(listaProduto)
             exibirRecyclerView()
-        }else{
+        } else {
             exibirMensagemErro()
         }
     }
@@ -81,8 +80,17 @@ class ProdutoFragment : Fragment() {
     }
 
     private fun exibirMensagemErro() {
-        binding.etNomeProduto.error = "Por favor preencha o campo de nome"
-        binding.etDetalheProduto.error = "Por favor preencha o campo de detalhe"
+        when {
+            (binding.etNomeProduto.text.isEmpty() && binding.etDetalheProduto.text.isEmpty()) -> {
+                binding.etNomeProduto.error = MSG_ERROR_MISSING_NAME
+                binding.etDetalheProduto.error = MSG_ERROR_MISSING_DETAIL
+            }
+            binding.etNomeProduto.text.isEmpty() -> binding.etNomeProduto.error =
+                MSG_ERROR_MISSING_NAME
+            binding.etDetalheProduto.text.isEmpty() -> binding.etDetalheProduto.error =
+                MSG_ERROR_MISSING_DETAIL
+            else -> {}
+        }
     }
 
     private fun limparCampoEdicao() {
